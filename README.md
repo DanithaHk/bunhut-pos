@@ -1,4 +1,4 @@
-# BunHut POS — Flutter + Firebase Step-by-Step Development Guide
+# BunHut POS — Flutter + Firebase 
 
 > Based on the BunHut POS React prototype (POS · Dashboard · Expenses · Profile screens)
 
