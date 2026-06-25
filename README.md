@@ -7,10 +7,9 @@
 ## Table of Contents
 
 1. [Project Setup](#1-project-setup)
-2. [Folder Structure](#2-folder-structure)
-3. [Firebase Setup](#3-firebase-setup)
-4. [Dependencies (pubspec.yaml)](#4-dependencies)
-5. [Testing Checklist](#19-testing-checklist)
+2. [Firebase Setup](#3-firebase-setup)
+3. [Dependencies (pubspec.yaml)](#4-dependencies)
+4. [Testing Checklist](#19-testing-checklist)
 
 ---
 
@@ -44,7 +43,7 @@ This generates `lib/firebase_options.dart` automatically.
 
 ---
 
-## 3. Firebase Setup
+## 2. Firebase Setup
 
 ### Enable in Firebase Console:
 - **Authentication** → Email/Password
@@ -93,7 +92,7 @@ service cloud.firestore {
 
 ---
 
-## 4. Dependencies
+## 3. Dependencies
 
 ### `pubspec.yaml`
 
@@ -140,7 +139,7 @@ Run: `flutter pub get`
 
 ---
 
-## 5. Testing Checklist
+## 4. Testing Checklist
 
 Run these commands before each build:
 
