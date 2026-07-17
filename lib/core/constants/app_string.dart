@@ -8,8 +8,8 @@ class AppString {
   static const businessPhone = '+94 11 234 5678';
   static const cashierName   = 'Test User';
 
-  static const List<String> categories     = ['All', 'Bun & Buggers ', 'Beverages', 'Rice','Kottu', 'Rice & Curry'];
-  static const List<String> productCategories = ['Bun & Buggers ',  'Rice & Curry','Beverages', 'Rice','Kottu', ];
+  static const List<String> categories     = ['All', 'Bun & Buggers ', 'Desert & Beverages', 'Rice','Kottu', 'Rice & Curry'];
+  static const List<String> productCategories = ['Bun & Buggers ',  'Rice & Curry','Desert & Beverages', 'Rice','Kottu', ];
   static const List<String> expenseCategories =
-  ['Spices', 'Vegetable', 'Drinks', 'Gas', 'Salary', 'Packaging', 'Utilities'];
+  ['Spices','Meat', 'eggs','sosejes', 'Vegetable', 'Drinks', 'Gas', 'Salary', 'Packaging', 'Utilities'];
 }

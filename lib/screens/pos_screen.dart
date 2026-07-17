@@ -5,6 +5,7 @@ import '../core/constants/app_string.dart';           // AppStrings.categories
 import '../../core/widgets/app_pill.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/product_provider.dart';           // ProductProvider
+import '../core/widgets/app_alert.dart';
 import 'widgets/product_card.dart';                       // ProductCard
 import 'widgets/cart_fab.dart';                           // CartFAB
 import 'widgets/add_product_sheet.dart';                  // AddProductSheet
@@ -14,18 +15,25 @@ import 'receipt/receipt_dialog.dart';                  // ReceiptDialog
 
 class POSScreen extends StatefulWidget {
   const POSScreen({super.key});
-  @override State<POSScreen> createState() => _POSScreenState();
+
+  @override
+  State<POSScreen> createState() => _POSScreenState();
 }
 
 class _POSScreenState extends State<POSScreen> {
   String _activeCat = 'All';
   String _query = '';
+
   bool _showCart = false;
   bool _showReceipt = false;
+
   final _searchCtrl = TextEditingController();
 
   @override
-  void dispose() { _searchCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +42,9 @@ class _POSScreenState extends State<POSScreen> {
 
     final filtered = products.where((p) {
       final catOk = _activeCat == 'All' || p.category == _activeCat;
-      final qOk   = _query.isEmpty ||
+      final qOk = _query.isEmpty ||
           p.name.toLowerCase().contains(_query.toLowerCase());
+
       return catOk && qOk;
     }).toList();
 
@@ -43,30 +52,59 @@ class _POSScreenState extends State<POSScreen> {
       children: [
         CustomScrollView(
           slivers: [
-            // ── Header ──────────────────────────────────────
+            /// ================= HEADER =================
             SliverToBoxAdapter(child: _buildHeader()),
-            // ── Search ──────────────────────────────────────
+
+            /// ================= SEARCH =================
             SliverToBoxAdapter(child: _buildSearch()),
-            // ── Category pills ──────────────────────────────
+
+            /// ================= CATEGORY =================
             SliverToBoxAdapter(child: _buildCategoryPills()),
-            // ── Product grid ────────────────────────────────
+
+            /// ================= PRODUCTS =================
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20,
-                  cart.count > 0 ? 170 : 30),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                0,
+                20,
+                cart.count > 0 ? 170 : 30,
+              ),
               sliver: SliverGrid(
                 delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => ProductCard(
-                    product: filtered[i],
-                    onAdd: () {
-                      context.read<ProductProvider>().decrementStock(filtered[i].id);
-                      context.read<CartProvider>().addProduct(filtered[i]);
-                    },
-                  ),
+                      (ctx, i) {
+                    final product = filtered[i];
+
+                    return ProductCard(
+                      product: product,
+                      onAdd: () {
+                        final provider =
+                        context.read<ProductProvider>();
+
+                        /// 🔥 NEW SAFE LOGIC
+                        if (product.trackStock) {
+                          if (product.stock <= 0) {
+                            AppAlert.show(
+                              context,
+                              message: "Stock නැත",
+                              type: AlertType.warning,
+                            );
+                            return;
+                          }
+
+                          provider.decrementStock(product.id);
+                        }
+
+                        context.read<CartProvider>().addProduct(product);
+                      },
+                    );
+                  },
                   childCount: filtered.length,
                 ),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12, mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                   childAspectRatio: 0.72,
                 ),
               ),
@@ -74,39 +112,41 @@ class _POSScreenState extends State<POSScreen> {
           ],
         ),
 
-        // ── Floating cart bar ────────────────────────────────
+        /// ================= CART BAR =================
         if (cart.count > 0)
           Positioned(
-            left: 16, right: 16, bottom: 16,
+            left: 16,
+            right: 16,
+            bottom: 16,
             child: CartFAB(
               count: cart.count,
               total: cart.total,
-              onOpen:     () => setState(() => _showCart    = true),
+              onOpen: () => setState(() => _showCart = true),
               onCheckout: () => setState(() => _showReceipt = true),
             ),
           ),
 
-        // ── Cart drawer ───────────────────────────────────────
+        /// ================= CART DRAWER =================
         if (_showCart)
           CartDrawer(
-            onClose:    () => setState(() => _showCart    = false),
+            onClose: () => setState(() => _showCart = false),
             onCheckout: () => setState(() {
-              _showCart    = false;
+              _showCart = false;
               _showReceipt = true;
             }),
           ),
 
-        // ── Receipt dialog ─────────────────────────────────────
+        /// ================= RECEIPT =================
         if (_showReceipt && cart.count > 0)
           ReceiptDialog(
             onClose: () => setState(() => _showReceipt = false),
             onComplete: (invoiceId) {
               setState(() => _showReceipt = false);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Order $invoiceId printed'),
-                  behavior: SnackBarBehavior.floating,
-                ),
+
+              AppAlert.show(
+                context,
+                message: 'Order $invoiceId සාර්ථකව complete කරන ලදී',
+                type: AlertType.success,
               );
             },
           ),
@@ -116,43 +156,23 @@ class _POSScreenState extends State<POSScreen> {
 
   Widget _buildHeader() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-    child: Row(
-      children: [
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('POINT OF SALE',
-                style: TextStyle(fontSize: 12, color: AppColors.textSec,
-                    fontWeight: FontWeight.w500, letterSpacing: 0.3)),
-            SizedBox(height: 2),
-            Text('BunHut POS',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700,
-                    color: AppColors.text, letterSpacing: -0.4)),
-          ],
-        )),
-        GestureDetector(
-          onTap: () => showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => AddProductSheet(
-              onSave: (p) => context.read<ProductProvider>().addProduct(p),
-            ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text(
+          'POINT OF SALE',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSec,
+            fontWeight: FontWeight.w500,
           ),
-          child: Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(
-                color: AppColors.primary.withOpacity(0.32),
-                blurRadius: 14, offset: const Offset(0, 6),
-              )],
-            ),
-            child: const Icon(Icons.add, color: Colors.white, size: 22),
+        ),
+        SizedBox(height: 2),
+        Text(
+          'BunHut POS',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -162,36 +182,20 @@ class _POSScreenState extends State<POSScreen> {
   Widget _buildSearch() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 12)],
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: AppColors.textSec, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: const InputDecoration.collapsed(
-                hintText: 'Search products…',
-                hintStyle: TextStyle(color: AppColors.textTer),
-              ),
-              onChanged: (v) => setState(() => _query = v),
-            ),
-          ),
-          if (_query.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _searchCtrl.clear();
-                setState(() => _query = '');
-              },
-              child: const Icon(Icons.close, color: AppColors.textSec, size: 16),
-            ),
-        ],
+      child: TextField(
+        controller: _searchCtrl,
+        decoration: const InputDecoration(
+          hintText: 'Search products…',
+          border: InputBorder.none,
+          icon: Icon(Icons.search),
+        ),
+        onChanged: (v) => setState(() => _query = v),
       ),
     ),
   );
@@ -200,14 +204,16 @@ class _POSScreenState extends State<POSScreen> {
     scrollDirection: Axis.horizontal,
     padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
     child: Row(
-      children: AppString.categories.map((c) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: AppPill(
-          label: c,
-          active: c == _activeCat,
-          onTap: () => setState(() => _activeCat = c),
-        ),
-      )).toList(),
+      children: AppString.categories.map((c) {
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: AppPill(
+            label: c,
+            active: c == _activeCat,
+            onTap: () => setState(() => _activeCat = c),
+          ),
+        );
+      }).toList(),
     ),
   );
 }

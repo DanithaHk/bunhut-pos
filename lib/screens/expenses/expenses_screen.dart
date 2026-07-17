@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/currency_formatter.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/constants/app_string.dart';
+import '../../core/widgets/app_alert.dart'; // ✅ ADD THIS
 
 import '../../model/expense.dart';
 import '../../providers/expense_provider.dart';
@@ -18,54 +19,32 @@ class ExpensesScreen extends StatefulWidget {
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
 
-  // =====================================================
-  // Selected category for new expense
-  // =====================================================
   String _category = 'Spices';
 
-  // =====================================================
-  // Text controllers
-  // =====================================================
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
   @override
   void dispose() {
-
-    // Release memory when screen is closed
     _amountCtrl.dispose();
     _noteCtrl.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
 
-    // =====================================================
-    // Get expenses from provider
-    // =====================================================
     final expenses = context.watch<ExpenseProvider>().expenses;
 
-    // Calculate total expense amount
     final total = expenses.fold(
       0.0,
           (sum, expense) => sum + expense.amount,
     );
 
-    // =====================================================
-    // Group expenses by category
-    // Example:
-    // Bakery -> [expense1, expense2]
-    // Spices -> [expense3]
-    // =====================================================
     final grouped = <String, List<Expense>>{};
 
     for (final expense in expenses) {
-      grouped.putIfAbsent(
-        expense.category,
-            () => [],
-      ).add(expense);
+      grouped.putIfAbsent(expense.category, () => []).add(expense);
     }
 
     return SingleChildScrollView(
@@ -76,17 +55,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
         children: [
 
-          // =================================================
-          // HEADER
-          // =================================================
-
           const Text(
             'TRACKING',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSec,
               fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
             ),
           ),
 
@@ -98,56 +72,32 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: AppColors.text,
-              letterSpacing: -0.4,
             ),
           ),
 
           const SizedBox(height: 16),
 
-          // =================================================
-          // TOTAL EXPENSE CARD
-          // =================================================
-
+          // TOTAL CARD
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
-
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [
-                  AppColors.expense,
-                  Color(0xFFEA580C),
-                ],
+                colors: [AppColors.expense, Color(0xFFEA580C)],
               ),
-
               borderRadius: BorderRadius.circular(16),
-
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.expense.withOpacity(0.25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
-
                 const Text(
                   'TOTAL EXPENSES TODAY',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
-                // Total Expense Amount
                 Text(
                   formatLKR(total),
                   style: const TextStyle(
@@ -156,10 +106,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     color: Colors.white,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
-                // Number of expenses and categories
                 Text(
                   '${expenses.length} entries across ${grouped.length} categories',
                   style: const TextStyle(
@@ -173,14 +120,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
           const SizedBox(height: 16),
 
-          // =================================================
-          // QUICK ADD EXPENSE CARD
-          // =================================================
-
+          // QUICK ADD
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
 
                 const Text(
@@ -188,47 +131,30 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.text,
                   ),
                 ),
 
                 const SizedBox(height: 12),
 
-                // =============================================
-                // Category + Amount
-                // =============================================
-
                 Row(
                   children: [
 
-                    // Category Dropdown
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _category,
-
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-
                           filled: true,
                           fillColor: AppColors.bg,
                         ),
-
                         items: AppString.expenseCategories
-                            .map(
-                              (category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          ),
-                        )
+                            .map((c) => DropdownMenuItem(
+                          value: c,
+                          child: Text(c),
+                        ))
                             .toList(),
-
                         onChanged: (value) {
                           setState(() {
                             _category = value!;
@@ -239,19 +165,15 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
                     const SizedBox(width: 10),
 
-                    // Amount Field
                     Expanded(
                       child: TextField(
                         controller: _amountCtrl,
                         keyboardType: TextInputType.number,
-
                         decoration: InputDecoration(
                           hintText: 'Amount',
-
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-
                           filled: true,
                           fillColor: AppColors.bg,
                         ),
@@ -262,20 +184,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
                 const SizedBox(height: 10),
 
-                // =============================================
-                // Note Field
-                // =============================================
-
                 TextField(
                   controller: _noteCtrl,
-
                   decoration: InputDecoration(
                     hintText: 'Note (optional)',
-
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-
                     filled: true,
                     fillColor: AppColors.bg,
                   ),
@@ -283,75 +198,62 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
                 const SizedBox(height: 12),
 
-                // =============================================
-                // ADD EXPENSE BUTTON
-                // =============================================
-
                 GestureDetector(
                   onTap: () {
 
-                    // Convert amount text to double
-                    final amt =
-                    double.tryParse(_amountCtrl.text);
+                    final amt = double.tryParse(_amountCtrl.text);
 
-                    if (amt == null) return;
+                    // ❌ ERROR ALERT
+                    if (amt == null || amt <= 0) {
+                      AppAlert.show(
+                        context,
+                        message: 'අවලංගු මුදලක් ඇතුළත් කර ඇත',
+                        type: AlertType.error,
+                      );
+                      return;
+                    }
 
-                    // Add expense to provider
                     context.read<ExpenseProvider>().add(
                       Expense(
                         id: '',
                         category: _category,
                         amount: amt,
-
                         note: _noteCtrl.text.isEmpty
                             ? '$_category purchase'
                             : _noteCtrl.text,
-
                         createdAt: DateTime.now(),
                       ),
                     );
 
-                    // Clear text fields
                     _amountCtrl.clear();
                     _noteCtrl.clear();
+
+                    // ✅ SUCCESS ALERT
+                    AppAlert.show(
+                      context,
+                      message: 'වියදම සාර්ථකව එකතු කරන ලදී',
+                      type: AlertType.success,
+                    );
                   },
 
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 13,
-                    ),
-
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          AppColors.expense,
-                          Color(0xFFEA580C),
-                        ],
+                        colors: [AppColors.expense, Color(0xFFEA580C)],
                       ),
-
                       borderRadius: BorderRadius.circular(12),
                     ),
-
-                    child: Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.center,
-
-                      children: const [
-
-                        Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, color: Colors.white, size: 18),
                         SizedBox(width: 8),
-
                         Text(
                           'Add Expense',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -365,157 +267,67 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
           const SizedBox(height: 16),
 
-          // =================================================
-          // EXPENSE LIST GROUPED BY CATEGORY
-          // =================================================
-
+          // LIST
           ...grouped.entries.map((entry) {
 
-            // Calculate category total
             final catTotal = entry.value.fold(
               0.0,
-                  (sum, expense) => sum + expense.amount,
+                  (sum, e) => sum + e.amount,
             );
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
 
-                // ===========================================
-                // CATEGORY HEADER
-                // ===========================================
-
                 Padding(
-                  padding:
-                  const EdgeInsets.fromLTRB(4, 4, 4, 8),
-
+                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
                   child: Row(
                     children: [
 
-                      const SizedBox(
-                        width: 6,
-                        height: 6,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: AppColors.expense,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
+                      const Icon(Icons.circle,
+                          size: 6, color: AppColors.expense),
 
                       const SizedBox(width: 8),
 
-                      Text(
-                        entry.key,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      const SizedBox(width: 6),
-
-                      Text(
-                        '· ${entry.value.length}',
-                      ),
+                      Text(entry.key,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700)),
 
                       const Spacer(),
 
-                      Text(
-                        formatLKR(catTotal),
-                        style: const TextStyle(
-                          color: AppColors.expense,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Text(formatLKR(catTotal),
+                          style: const TextStyle(
+                              color: AppColors.expense)),
                     ],
                   ),
                 ),
 
-                // ===========================================
-                // CATEGORY EXPENSES
-                // ===========================================
-
                 AppCard(
                   padding: EdgeInsets.zero,
-
                   child: ListView.separated(
                     shrinkWrap: true,
-                    physics:
-                    const NeverScrollableScrollPhysics(),
-
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: entry.value.length,
-
-                    separatorBuilder: (_, __) =>
-                    const Divider(),
-
+                    separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (_, i) {
 
                       final e = entry.value[i];
 
-                      return Padding(
-                        padding:
-                        const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
+                      return ListTile(
+                        title: Text(e.note),
+                        subtitle: Text(e.createdAt.toString()),
+                        trailing: Text(formatLKR(e.amount)),
 
-                        child: Row(
-                          children: [
+                        onLongPress: () {
+                          context.read<ExpenseProvider>().remove(e.id);
 
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-
-                                children: [
-
-                                  Text(e.note),
-
-                                  Text(
-                                    e.createdAt.toString(),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            Text(
-                              formatLKR(e.amount),
-                            ),
-
-                            const SizedBox(width: 10),
-
-                            // Delete Expense
-                            GestureDetector(
-                              onTap: () {
-                                context
-                                    .read<ExpenseProvider>()
-                                    .remove(e.id);
-                              },
-
-                              child: Container(
-                                width: 30,
-                                height: 30,
-
-                                decoration: BoxDecoration(
-                                  color:
-                                  AppColors.expenseTint,
-                                  borderRadius:
-                                  BorderRadius.circular(
-                                      8),
-                                ),
-
-                                child: const Icon(
-                                  Icons.delete_outline,
-                                  color:
-                                  AppColors.expense,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          // ✅ DELETE ALERT
+                          AppAlert.show(
+                            context,
+                            message: 'වියදම ඉවත් කරන ලදී',
+                            type: AlertType.warning,
+                          );
+                        },
                       );
                     },
                   ),
@@ -524,7 +336,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 const SizedBox(height: 14),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );

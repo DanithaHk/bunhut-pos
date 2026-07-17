@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_string.dart'; // ✅ CHANGED: import added
+import '../../../core/constants/app_string.dart';
+import '../../../core/widgets/app_alert.dart';
 import '../../../model/product.dart';
 
 class ProductFormSheet extends StatefulWidget {
@@ -19,22 +20,19 @@ class ProductFormSheet extends StatefulWidget {
 
 class _ProductFormSheetState extends State<ProductFormSheet> {
   final _formKey = GlobalKey<FormState>();
+
   final _nameCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _stockCtrl = TextEditingController();
 
-  /// ==========================================================
-  /// CHANGED: default category now comes from AppString list
-  /// ==========================================================
   String _category = AppString.productCategories.first;
 
-  /// ==========================================================
-  /// CHANGED: removed hardcoded list (now using AppString)
-  /// ==========================================================
+  /// 🔥 NEW: track stock toggle
+  bool _trackStock = true;
 
   static const _tones = {
     'Bun & Buggers ': '#E8B383',
-    'Beverages': '#C7E5B5',
+    'Desert & Beverages': '#C7E5B5',
     'Rice': '#A7B98C',
     'Kottu': '#D6C07A',
     'Rice & Curry': '#9BC1BC',
@@ -52,12 +50,12 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
       _priceCtrl.text = p.price.toStringAsFixed(0);
       _stockCtrl.text = p.stock.toString();
 
-      /// ==========================================================
-      /// CHANGED: safe category fallback
-      /// ==========================================================
       _category = AppString.productCategories.contains(p.category)
           ? p.category
           : AppString.productCategories.first;
+
+      /// 🔥 LOAD EXISTING TRACK STOCK
+      _trackStock = p.trackStock;
     }
   }
 
@@ -70,22 +68,55 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
   }
 
   void _save() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppAlert.show(
+        context,
+        message: "කරුණාකර සියලු fields නිවැරදිව පුරවන්න",
+        type: AlertType.warning,
+      );
+      return;
+    }
 
-    final hex = _tones[_category]!.replaceAll('#', '');
-    final tone = Color(int.parse('FF$hex', radix: 16));
+    try {
+      final hex = _tones[_category]!.replaceAll('#', '');
+      final tone = Color(int.parse('FF$hex', radix: 16));
 
-    final product = Product(
-      id: widget.existing?.id ?? '',
-      name: _nameCtrl.text.trim(),
-      price: double.parse(_priceCtrl.text.trim()),
-      stock: int.parse(_stockCtrl.text.trim()),
-      category: _category,
-      tone: tone,
-    );
+      final product = Product(
+        id: widget.existing?.id ?? '',
+        name: _nameCtrl.text.trim(),
+        price: double.parse(_priceCtrl.text.trim()),
 
-    widget.onSave(product);
-    Navigator.pop(context);
+        /// 🔥 IMPORTANT LOGIC
+        stock: _trackStock
+            ? int.parse(_stockCtrl.text.trim())
+            : 0,
+
+        trackStock: _trackStock,
+
+        category: _category,
+        tone: tone,
+      );
+
+      widget.onSave(product);
+
+      AppAlert.show(
+        context,
+        message: _isEdit
+            ? "Product එක සාර්ථකව update වුණා"
+            : "Product එක සාර්ථකව add වුණා",
+        type: AlertType.success,
+      );
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Navigator.pop(context);
+      });
+    } catch (e) {
+      AppAlert.show(
+        context,
+        message: "Something went wrong. නැවත try කරන්න",
+        type: AlertType.error,
+      );
+    }
   }
 
   @override
@@ -104,6 +135,7 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle bar
             Center(
               child: Container(
                 width: 40,
@@ -130,8 +162,7 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
                 const Spacer(),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close,
-                      color: AppColors.textSec, size: 22),
+                  child: const Icon(Icons.close, color: AppColors.textSec),
                 ),
               ],
             ),
@@ -161,28 +192,43 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
                         type: TextInputType.number,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Required';
-                          if (double.tryParse(v.trim()) == null) return 'Invalid';
+                          if (double.tryParse(v.trim()) == null) {
+                            return 'Invalid';
+                          }
                           return null;
                         },
                       ),
                     ],
                   ),
                 ),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _label('Stock'),
-                      _field(
-                        ctrl: _stockCtrl,
-                        hint: '0',
-                        type: TextInputType.number,
+
+                      /// 🔥 DISABLE IF TRACK STOCK OFF
+                      TextFormField(
+                        controller: _stockCtrl,
+                        enabled: _trackStock,
+                        keyboardType: TextInputType.number,
                         validator: (v) {
+                          if (!_trackStock) return null;
                           if (v == null || v.trim().isEmpty) return 'Required';
                           if (int.tryParse(v.trim()) == null) return 'Invalid';
                           return null;
                         },
+                        decoration: InputDecoration(
+                          hintText: _trackStock ? '0' : 'Unlimited',
+                          filled: true,
+                          fillColor: AppColors.bg,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -192,11 +238,44 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
 
             const SizedBox(height: 14),
 
-            _label('Category'),
+            /// 🔥 TRACK STOCK SWITCH
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    "Track Stock",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  Switch(
+                    value: _trackStock,
+                    onChanged: (v) {
+                      setState(() {
+                        _trackStock = v;
 
-            /// ==========================================================
-            /// CHANGED: now using AppString.productCategories
-            /// ==========================================================
+                        /// auto reset stock if turned off
+                        if (!v) {
+                          _stockCtrl.text = "0";
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            _label('Category'),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -209,17 +288,11 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
                 child: DropdownButton<String>(
                   value: _category,
                   isExpanded: true,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.text,
-                  ),
                   items: AppString.productCategories
-                      .map(
-                        (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c),
-                    ),
-                  )
+                      .map((c) => DropdownMenuItem(
+                    value: c,
+                    child: Text(c),
+                  ))
                       .toList(),
                   onChanged: (v) => setState(() => _category = v!),
                 ),
@@ -235,10 +308,7 @@ class _ProductFormSheetState extends State<ProductFormSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primaryDark
-                    ],
+                    colors: [AppColors.primary, AppColors.primaryDark],
                   ),
                   borderRadius: BorderRadius.circular(14),
                 ),

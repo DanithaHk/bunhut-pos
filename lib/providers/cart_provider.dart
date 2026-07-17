@@ -1,103 +1,103 @@
 import 'package:flutter/material.dart';
-
 import '../model/cart_item.dart';
 import '../model/product.dart';
 
-
 class CartProvider extends ChangeNotifier {
-
-  // cart items list
   final List<CartItem> _items = [];
 
-  List<CartItem> get items => _items;
+  List<CartItem> get items => List.unmodifiable(_items);
 
-  // total count
-  int get count {
-    int total = 0;
-    for (var item in _items) {
-      total += item.qty;
-    }
-    return total;
-  }
+  int get count =>
+      _items.fold<int>(0, (sum, item) => sum + item.qty);
 
-  // subtotal
-  double get subtotal {
-    double total = 0;
-    for (var item in _items) {
-      total += item.lineTotal;
-    }
-    return total;
-  }
+  double get subtotal =>
+      _items.fold<double>(0, (sum, item) => sum + item.lineTotal);
 
-  // tax (simple 10%)
-  double get tax {
-    return subtotal * 0.1;
-  }
+  double get tax => 0;
 
-  // total
-  double get total {
-    return subtotal + tax;
-  }
+  double get total => subtotal + tax;
 
-  // add product
+  // ===========================
+  // ADD PRODUCT
+  // ===========================
   void addProduct(Product product) {
+    final index =
+    _items.indexWhere((i) => i.productId == product.id);
 
-    for (var item in _items) {
-      if (item.productId == product.id) {
-        item.qty++;
-        notifyListeners();
-        return;
-      }
+    if (index >= 0) {
+      _items[index].qty++;
+    } else {
+      _items.add(
+        CartItem(
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          qty: 1,
+          tone: product.tone,
+          category: product.category,
+        ),
+      );
     }
-
-    _items.add(
-      CartItem(
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        qty: 1,
-        tone: product.tone,
-        category: product.category,
-      ),
-    );
 
     notifyListeners();
   }
 
-  // increase qty
+  // ===========================
+  // INCREMENT
+  // ===========================
   void increment(String productId) {
-    for (var item in _items) {
-      if (item.productId == productId) {
-        item.qty++;
-      }
+    final index =
+    _items.indexWhere((i) => i.productId == productId);
+
+    if (index >= 0) {
+      _items[index].qty++;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  // decrease qty
+  // ===========================
+  // DECREMENT
+  // ===========================
   void decrement(String productId) {
-    for (var item in _items) {
-      if (item.productId == productId) {
-        item.qty--;
+    final index =
+    _items.indexWhere((i) => i.productId == productId);
 
-        if (item.qty <= 0) {
-          _items.remove(item);
-        }
-        break;
-      }
+    if (index < 0) return;
+
+    if (_items[index].qty > 1) {
+      _items[index].qty--;
+    } else {
+      _items.removeAt(index);
     }
+
     notifyListeners();
   }
 
-  // remove item
+  // ===========================
+  // REMOVE
+  // ===========================
   void remove(String productId) {
-    _items.removeWhere((item) => item.productId == productId);
+    _items.removeWhere((i) => i.productId == productId);
     notifyListeners();
   }
 
-  // clear cart
+  // ===========================
+  // CLEAR
+  // ===========================
   void clear() {
     _items.clear();
     notifyListeners();
+  }
+
+  CartItem? getItem(String productId) {
+    try {
+      return _items.firstWhere((i) => i.productId == productId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool contains(String productId) {
+    return _items.any((i) => i.productId == productId);
   }
 }

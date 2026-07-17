@@ -5,6 +5,9 @@ class ProductService {
   final CollectionReference products =
   FirebaseFirestore.instance.collection('products');
 
+  /// ===========================
+  /// STREAM PRODUCTS
+  /// ===========================
   Stream<List<Product>> watch() {
     return products
         .orderBy('createdAt', descending: false)
@@ -16,30 +19,53 @@ class ProductService {
     });
   }
 
+  /// ===========================
+  /// ADD PRODUCT
+  /// ===========================
   Future<void> add(Product product) async {
     await products.add({
       ...product.toMap(),
+
+      /// ensure createdAt always exists
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  // ===========================
-  // CHANGE:
-  // Added update product.
-  // ===========================
+  /// ===========================
+  /// UPDATE FULL PRODUCT
+  /// ===========================
   Future<void> update(Product product) async {
-    await products.doc(product.id).update(product.toMap());
-  }
+    await products.doc(product.id).update({
+      'name': product.name,
+      'price': product.price,
+      'stock': product.stock,
+      'category': product.category,
+      'tone': product.tone
+          .value
+          .toRadixString(16)
+          .substring(2)
+          .toUpperCase(),
 
-  Future<void> updateStock(
-      String id,
-      int stock,
-      ) async {
-    await products.doc(id).update({
-      'stock': stock,
+      /// ✅ NEW FIELD
+      'trackStock': product.trackStock,
+
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
+  /// ===========================
+  /// UPDATE STOCK ONLY
+  /// ===========================
+  Future<void> updateStock(String id, int stock) async {
+    await products.doc(id).update({
+      'stock': stock,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// ===========================
+  /// DELETE PRODUCT
+  /// ===========================
   Future<void> delete(String id) async {
     await products.doc(id).delete();
   }

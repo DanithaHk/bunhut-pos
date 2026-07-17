@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/widgets/app_alert.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/product_provider.dart';
+
 
 class CartDrawer extends StatelessWidget {
 
   final VoidCallback onClose;
   final VoidCallback onCheckout;
+
 
   const CartDrawer({
     super.key,
@@ -15,190 +18,500 @@ class CartDrawer extends StatelessWidget {
     required this.onCheckout,
   });
 
+
   @override
   Widget build(BuildContext context) {
 
     final cart = context.watch<CartProvider>();
 
+
     return Drawer(
 
       child: Column(
+
         children: [
 
-          // Header
+          // ================= HEADER =================
+
           AppBar(
+
             title: const Text("Cart"),
+
             automaticallyImplyLeading: false,
+
             actions: [
 
               IconButton(
-                onPressed: onClose,
+
                 icon: const Icon(Icons.close),
-              ),
+
+                onPressed: onClose,
+
+              )
 
             ],
+
           ),
 
-          // Empty cart
-          if (cart.items.isEmpty)
+
+
+          // ================= EMPTY CART =================
+
+          if(cart.items.isEmpty)
+
             const Expanded(
+
               child: Center(
+
                 child: Text(
                   "Cart is Empty",
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
                 ),
+
               ),
+
             )
+
+
+
+          // ================= CART ITEMS =================
 
           else
 
-          // Cart Items
             Expanded(
+
               child: ListView.builder(
 
                 itemCount: cart.items.length,
 
-                itemBuilder: (context, index) {
+
+                itemBuilder: (context,index){
+
 
                   final item = cart.items[index];
 
+
+                  // Get Product object
+
+                  final product = context
+                      .read<ProductProvider>()
+                      .getById(item.productId);
+
+
+
                   return ListTile(
 
-                    title: Text(item.name),
+                    leading: CircleAvatar(
 
-                    subtitle: Text(
-                      "Qty : ${item.qty}",
+                      backgroundColor: item.tone,
+
+                      child: Text(
+                        item.name[0],
+                        style: const TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+
                     ),
 
+
+                    title: Text(
+                      item.name,
+                    ),
+
+
+                    subtitle: Text(
+
+                      "Qty : ${item.qty}\n"
+                          "LKR ${(item.price * item.qty).toStringAsFixed(0)}",
+
+                    ),
+
+
+
                     trailing: Row(
+
                       mainAxisSize: MainAxisSize.min,
+
 
                       children: [
 
-                        // Minus button
-                        IconButton(
-                          icon: const Icon(Icons.remove),
 
-                          onPressed: () {
+
+                        // ================= REMOVE =================
+
+                        IconButton(
+
+                          icon: const Icon(
+                            Icons.remove,
+                          ),
+
+
+                          onPressed: (){
+
 
                             context
-                                .read<ProductProvider>()
-                                .incrementStock(
-                                item.productId);
-
-                            cart.decrement(
-                                item.productId);
-                          },
-                        ),
-
-                        // Plus button
-                        IconButton(
-                          icon: const Icon(Icons.add),
-
-                          onPressed: () {
-
-                            cart.increment(
-                                item.productId);
-                          },
-                        ),
-
-                        // Delete button
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-
-                          onPressed: () {
-
-                            context
-                                .read<ProductProvider>()
-                                .restoreStock(
+                                .read<CartProvider>()
+                                .decrement(
                               item.productId,
-                              item.qty,
                             );
 
-                            cart.remove(
-                                item.productId);
+
+
+                            AppAlert.show(
+
+                              context,
+
+                              message:
+                              "Quantity decreased",
+
+                              type:
+                              AlertType.info,
+
+                            );
+
+
                           },
+
                         ),
+
+
+
+
+
+                        // ================= ADD =================
+
+                        IconButton(
+
+                          icon: const Icon(
+                            Icons.add,
+                          ),
+
+
+                          onPressed: (){
+
+
+                            context
+                                .read<CartProvider>()
+                                .increment(
+                              item.productId,
+                            );
+
+
+
+                            // Reduce stock only tracked products
+
+                            if(product != null &&
+                                product.trackStock){
+
+
+                              context
+                                  .read<ProductProvider>()
+                                  .decrementStock(
+                                product.id,
+                              );
+
+                            }
+
+
+
+
+                            AppAlert.show(
+
+                              context,
+
+                              message:
+                              "Quantity increased",
+
+                              type:
+                              AlertType.success,
+
+                            );
+
+
+                          },
+
+                        ),
+
+
+
+
+
+
+                        // ================= DELETE =================
+
+                        IconButton(
+
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                          ),
+
+
+
+                          onPressed: (){
+
+
+                            // Restore stock
+
+                            if(product != null &&
+                                product.trackStock){
+
+
+                              context
+                                  .read<ProductProvider>()
+                                  .restoreStock(
+
+                                product.id,
+
+                                item.qty,
+
+                              );
+
+
+                            }
+
+
+
+                            context
+                                .read<CartProvider>()
+                                .remove(
+                              item.productId,
+                            );
+
+
+
+
+                            AppAlert.show(
+
+                              context,
+
+                              message:
+                              "${item.name} removed",
+
+                              type:
+                              AlertType.warning,
+
+                            );
+
+
+                          },
+
+                        ),
+
+
                       ],
+
                     ),
+
+
                   );
+
+
                 },
+
               ),
+
             ),
 
-          // Total section
+
+
+
+
+
+          // ================= TOTAL SECTION =================
+
+
           Container(
 
             padding: const EdgeInsets.all(15),
 
+
             child: Column(
+
               children: [
 
-                Row(
-                  children: [
 
-                    const Text("Subtotal"),
-
-                    const Spacer(),
-
-                    Text(
-                      "LKR ${cart.subtotal}",
-                    ),
-                  ],
+                _row(
+                  "Subtotal",
+                  cart.subtotal,
                 ),
 
-                Row(
-                  children: [
 
-                    const Text("Tax"),
-
-                    const Spacer(),
-
-                    Text(
-                      "LKR ${cart.tax}",
-                    ),
-                  ],
+                _row(
+                  "Tax",
+                  cart.tax,
                 ),
 
-                Row(
-                  children: [
 
-                    const Text(
-                      "Total",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                const Divider(),
 
-                    const Spacer(),
 
-                    Text(
-                      "LKR ${cart.total}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+
+                _row(
+
+                  "Total",
+
+                  cart.total,
+
+                  bold: true,
+
                 ),
 
-                const SizedBox(height: 10),
+
+
+
+                const SizedBox(
+                  height: 15,
+                ),
+
+
+
+
 
                 SizedBox(
+
                   width: double.infinity,
+
 
                   child: ElevatedButton(
 
-                    onPressed: onCheckout,
 
-                    child: const Text(
+                    onPressed: (){
+
+
+                      if(cart.items.isEmpty){
+
+
+                        AppAlert.show(
+
+                          context,
+
+                          message:
+                          "Cart is empty",
+
+                          type:
+                          AlertType.warning,
+
+                        );
+
+
+                        return;
+
+                      }
+
+
+
+                      onCheckout();
+
+
+                    },
+
+
+
+                    child:
+                    const Text(
                       "Checkout",
                     ),
+
+
                   ),
-                ),
+
+                )
+
+
+
               ],
+
+
             ),
-          ),
+
+
+          )
+
+
         ],
+
+
       ),
+
+
     );
+
+
   }
+
+
+
+
+
+  Widget _row(
+
+      String label,
+
+      double value,
+
+      {
+        bool bold = false,
+      }
+
+      ){
+
+
+    return Row(
+
+
+      children: [
+
+
+        Text(
+
+          label,
+
+          style: TextStyle(
+
+            fontWeight:
+            bold
+                ? FontWeight.bold
+                : FontWeight.normal,
+
+          ),
+
+        ),
+
+
+
+        const Spacer(),
+
+
+
+        Text(
+
+          "LKR ${value.toStringAsFixed(0)}",
+
+
+          style: TextStyle(
+
+            fontWeight:
+            bold
+                ? FontWeight.bold
+                : FontWeight.normal,
+
+          ),
+
+
+        ),
+
+
+
+      ],
+
+
+    );
+
+  }
+
+
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/app_alert.dart';
 import '../../providers/app_auth_provider.dart';
 import 'user_management_screen.dart'; // Import target navigation terminal profile
 
@@ -105,6 +106,12 @@ class ProfileScreen extends StatelessWidget {
                   title: const Text('Log Out Account', style: TextStyle(fontSize: 14, color: AppColors.expense, fontWeight: FontWeight.w600)),
                   onTap: () async {
                     await authProvider.logout();
+
+                    AppAlert.show(
+                      context,
+                      message: 'Logout Successful',
+                      type: AlertType.success,
+                    );
                   },
                 ),
               ],

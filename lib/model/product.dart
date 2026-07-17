@@ -5,7 +5,12 @@ class Product {
   final String id;
   final String name;
   final double price;
+
   int stock;
+
+  /// NEW
+  final bool trackStock;
+
   final String category;
   final Color tone;
 
@@ -14,36 +19,51 @@ class Product {
     required this.name,
     required this.price,
     required this.stock,
+    required this.trackStock,
     required this.category,
     required this.tone,
   });
 
   factory Product.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
+
     return Product(
-      id:       doc.id,
-      name:     d['name'] ?? '',
-      price:    (d['price'] ?? 0).toDouble(),
-      stock:    d['stock'] ?? 0,
+      id: doc.id,
+      name: d['name'] ?? '',
+      price: (d['price'] ?? 0).toDouble(),
+      stock: d['stock'] ?? 0,
+      trackStock: d['trackStock'] ?? true,
       category: d['category'] ?? 'Bakery',
-      tone:     _hexToColor(d['tone'] ?? '#FCD9A6'),
+      tone: _hexToColor(d['tone'] ?? '#FCD9A6'),
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'name':     name,
-    'price':    price,
-    'stock':    stock,
-    'category': category,
-    'tone':     _colorToHex(tone),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'price': price,
+      'stock': stock,
+      'trackStock': trackStock,
+      'category': category,
+      'tone': _colorToHex(tone),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
 
-  Product copyWith({int? stock}) => Product(
-    id: id, name: name, price: price,
-    stock: stock ?? this.stock,
-    category: category, tone: tone,
-  );
+  Product copyWith({
+    int? stock,
+    bool? trackStock,
+  }) {
+    return Product(
+      id: id,
+      name: name,
+      price: price,
+      stock: stock ?? this.stock,
+      trackStock: trackStock ?? this.trackStock,
+      category: category,
+      tone: tone,
+    );
+  }
 
   static Color _hexToColor(String hex) {
     final h = hex.replaceAll('#', '');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/app_alert.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading        = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -26,26 +26,50 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppAlert.show(
+        context,
+        message: "Please fill all fields correctly",
+        type: AlertType.warning,
+      );
+      return;
+    }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    setState(() => _isLoading = true);
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email:    _emailCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
       );
-      // Navigation is handled by an auth state listener (StreamBuilder)
-      // in main.dart — no need to manually push a route here.
+
+      if (mounted) {
+        AppAlert.show(
+          context,
+          message: "Login successful",
+          type: AlertType.success,
+        );
+      }
     } on FirebaseAuthException catch (e) {
-      setState(() => _errorMessage = _mapAuthError(e.code));
+      if (mounted) {
+        AppAlert.show(
+          context,
+          message: _mapAuthError(e.code),
+          type: AlertType.error,
+        );
+      }
     } catch (e) {
-      setState(() => _errorMessage = 'Something went wrong. Try again.');
+      if (mounted) {
+        AppAlert.show(
+          context,
+          message: "Something went wrong. Try again.",
+          type: AlertType.error,
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -116,31 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(fontSize: 14.5, color: AppColors.textSec)),
                     const SizedBox(height: 36),
 
-                    // ── Error banner ───────────────────────────
-                    if (_errorMessage != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.expenseTint,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.expense.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline,
-                                color: AppColors.expense, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(_errorMessage!,
-                                  style: const TextStyle(fontSize: 12.5,
-                                      color: AppColors.expense, fontWeight: FontWeight.w500)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                    ],
 
                     // ── Email field ────────────────────────────
                     _label('Email'),

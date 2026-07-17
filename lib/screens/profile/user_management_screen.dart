@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/app_alert.dart';
 import '../../providers/app_auth_provider.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -35,7 +36,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
+      final authProvider =
+      Provider.of<AppAuthProvider>(context, listen: false);
+
       await authProvider.registerNewUser(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -45,13 +48,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       _emailController.clear();
       _passwordController.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Staff user deployed successfully!')),
+      // ✅ SUCCESS ALERT
+      AppAlert.show(
+        context,
+        message: 'නව user account එක සාර්ථකව නිර්මාණය කරන ලදී',
+        type: AlertType.success,
       );
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deployment Error: $e')),
+      // ❌ ERROR ALERT
+      AppAlert.show(
+        context,
+        message: 'User creation අසාර්ථක විය',
+        type: AlertType.error,
       );
+
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -63,17 +74,29 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
-      await authProvider.changeCurrentPassword(_newPasswordController.text.trim());
+      final authProvider =
+      Provider.of<AppAuthProvider>(context, listen: false);
+
+      await authProvider
+          .changeCurrentPassword(_newPasswordController.text.trim());
+
       _newPasswordController.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password updated successfully!')),
+      // ✅ SUCCESS ALERT
+      AppAlert.show(
+        context,
+        message: 'Password සාර්ථකව update කරන ලදී',
+        type: AlertType.success,
       );
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password Update Failed: $e')),
+      // ❌ ERROR ALERT
+      AppAlert.show(
+        context,
+        message: 'Password update අසාර්ථක විය',
+        type: AlertType.error,
       );
+
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

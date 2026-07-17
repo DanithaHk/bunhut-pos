@@ -5,18 +5,15 @@ import '../core/service/product_service.dart';
 
 class ProductProvider extends ChangeNotifier {
   ProductProvider() {
-    loadProducts(); // auto load on app start
+    loadProducts();
   }
+
   final ProductService _service = ProductService();
 
   List<Product> _products = [];
   bool _isLoading = false;
   String? _error;
 
-  // ===========================
-  // CHANGE: Keep only one stream
-  // subscription.
-  // ===========================
   StreamSubscription<List<Product>>? _subscription;
 
   List<Product> get products => List.unmodifiable(_products);
@@ -24,32 +21,31 @@ class ProductProvider extends ChangeNotifier {
   String? get error => _error;
 
   // ===========================
-  // CHANGE:
-  // Prevent multiple listeners.
+  // LOAD PRODUCTS (FIXED STREAM HANDLING)
   // ===========================
   void loadProducts() {
-    print("🔥 loadProducts CALLED"); // ADD THIS
-
     _isLoading = true;
     notifyListeners();
 
-    _service.watch().listen(
-          (list) {
-        print("✅ Products received: ${list.length}"); // ADD THIS
+    _subscription?.cancel(); // 🔥 prevent multiple listeners
 
+    _subscription = _service.watch().listen(
+          (list) {
         _products = list;
         _isLoading = false;
         notifyListeners();
       },
       onError: (e) {
-        print("❌ Firestore error: $e"); // ADD THIS
-
-        _isLoading = false;
         _error = e.toString();
+        _isLoading = false;
         notifyListeners();
       },
     );
   }
+
+  // ===========================
+  // ADD PRODUCT
+  // ===========================
   Future<void> addProduct(Product product) async {
     try {
       await _service.add(product);
@@ -60,8 +56,7 @@ class ProductProvider extends ChangeNotifier {
   }
 
   // ===========================
-  // CHANGE:
-  // Added update product.
+  // UPDATE PRODUCT
   // ===========================
   Future<void> updateProduct(Product product) async {
     try {
@@ -72,6 +67,9 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  // ===========================
+  // DELETE PRODUCT
+  // ===========================
   Future<void> deleteProduct(String id) async {
     try {
       await _service.delete(id);
@@ -81,69 +79,106 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  // ===========================
+  // 🔥 DECREMENT STOCK (FIXED LOGIC)
+  // ===========================
   Future<void> decrementStock(String id) async {
     final idx = _products.indexWhere((p) => p.id == id);
-
     if (idx < 0) return;
 
-    if (_products[idx].stock <= 0) return;
+    final product = _products[idx];
 
-    final stock = _products[idx].stock - 1;
+    /// 🚨 IMPORTANT RULE
+    /// If stock is NOT tracked → do nothing
+    if (!product.trackStock) return;
 
-    _products[idx] = _products[idx].copyWith(stock: stock);
+    /// prevent negative stock
+    if (product.stock <= 0) return;
 
+    final updated = product.stock - 1;
+
+    _products[idx] = product.copyWith(stock: updated);
     notifyListeners();
 
-    await _service.updateStock(id, stock);
+    await _service.updateStock(id, updated);
   }
 
+  // ===========================
+  // 🔥 INCREMENT STOCK (FIXED)
+  // ===========================
   Future<void> incrementStock(String id) async {
     final idx = _products.indexWhere((p) => p.id == id);
-
     if (idx < 0) return;
 
-    final stock = _products[idx].stock + 1;
+    final product = _products[idx];
 
-    _products[idx] = _products[idx].copyWith(stock: stock);
+    if (!product.trackStock) return;
 
+    final updated = product.stock + 1;
+
+    _products[idx] = product.copyWith(stock: updated);
     notifyListeners();
 
-    await _service.updateStock(id, stock);
+    await _service.updateStock(id, updated);
   }
 
+  // ===========================
+  // RESTORE STOCK (FIXED)
+  // ===========================
   Future<void> restoreStock(String id, int qty) async {
     final idx = _products.indexWhere((p) => p.id == id);
-
     if (idx < 0) return;
 
-    final stock = _products[idx].stock + qty;
+    final product = _products[idx];
 
-    _products[idx] = _products[idx].copyWith(stock: stock);
+    if (!product.trackStock) return;
 
+    final updated = product.stock + qty;
+
+    _products[idx] = product.copyWith(stock: updated);
     notifyListeners();
 
-    await _service.updateStock(id, stock);
+    await _service.updateStock(id, updated);
   }
 
+  // ===========================
+  // GET PRODUCT
+  // ===========================
   Product? getById(String id) {
+
     try {
-      return _products.firstWhere((p) => p.id == id);
-    } catch (_) {
+
+      return products.firstWhere(
+            (p) => p.id == id,
+      );
+
+    } catch(e) {
+
       return null;
+
     }
+
   }
 
+  // ===========================
+  // STOCK CHECK (UPDATED LOGIC)
+  // ===========================
   bool hasStock(String id) {
     final p = getById(id);
-    return p != null && p.stock > 0;
+
+    if (p == null) return false;
+
+    /// if NOT tracked → always available
+    if (!p.trackStock) return true;
+
+    return p.stock > 0;
   }
 
+  // ===========================
+  // DISPOSE
+  // ===========================
   @override
   void dispose() {
-    // ===========================
-    // CHANGE:
-    // Cancel Firestore listener.
-    // ===========================
     _subscription?.cancel();
     super.dispose();
   }
