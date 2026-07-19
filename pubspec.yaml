@@ -26,6 +26,7 @@ dependencies:
 
   # Internet Connectivity
   connectivity_plus: ^7.0.0
+  logger: ^2.7.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

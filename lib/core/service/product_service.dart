@@ -35,22 +35,29 @@ class ProductService {
   /// UPDATE FULL PRODUCT
   /// ===========================
   Future<void> update(Product product) async {
+
     await products.doc(product.id).update({
+
       'name': product.name,
+
       'price': product.price,
+
       'stock': product.stock,
+
       'category': product.category,
+
       'tone': product.tone
-          .value
+          .toARGB32()
           .toRadixString(16)
           .substring(2)
           .toUpperCase(),
 
-      /// ✅ NEW FIELD
       'trackStock': product.trackStock,
 
       'updatedAt': FieldValue.serverTimestamp(),
+
     });
+
   }
 
   /// ===========================

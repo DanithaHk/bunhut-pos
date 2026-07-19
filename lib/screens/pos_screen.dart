@@ -8,7 +8,6 @@ import '../../providers/product_provider.dart';           // ProductProvider
 import '../core/widgets/app_alert.dart';
 import 'widgets/product_card.dart';                       // ProductCard
 import 'widgets/cart_fab.dart';                           // CartFAB
-import 'widgets/add_product_sheet.dart';                  // AddProductSheet
 import 'cart/cart_drawer.dart';                        // CartDrawer
 import 'receipt/receipt_dialog.dart';                  // ReceiptDialog
 

@@ -1,3 +1,4 @@
+import '../../core/utils/app_logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,17 +14,29 @@ class AuthService {
 
   /// Get user profile from Firestore
   Future<UserModel?> getUserProfile(String uid) async {
-    print("[AuthService] Fetching user profile...");
-    print("[AuthService] UID: $uid");
+    AppLogger.log(
+      "Fetching user profile",
+      name: "AuthService",
+    );
 
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
 
-      print("[AuthService] Document Exists: ${doc.exists}");
-      print("[AuthService] Document Data: ${doc.data()}");
+      AppLogger.log(
+        "Document Exists: ${doc.exists}",
+        name: "AuthService",
+      );
+
+      AppLogger.log(
+        "Document Data: ${doc.data()}",
+        name: "AuthService",
+      );
 
       if (!doc.exists || doc.data() == null) {
-        print("[AuthService] User document not found");
+        AppLogger.log(
+          "User document not found",
+          name: "AuthService",
+        );
         return null;
       }
 
@@ -32,13 +45,29 @@ class AuthService {
         uid,
       );
 
-      print("[AuthService] UserModel Created");
-      print("[AuthService] Email: ${user.email}");
-      print("[AuthService] Role: ${user.role}");
+      AppLogger.log(
+        "UserModel Created",
+        name: "AuthService",
+      );
+
+      AppLogger.log(
+        "Email: ${user.email}",
+        name: "AuthService",
+      );
+
+      AppLogger.log(
+        "Role: ${user.role}",
+        name: "AuthService",
+      );
 
       return user;
-    } catch (e) {
-      print("[AuthService] ERROR: $e");
+    }catch (e) {
+      AppLogger.error(
+        "Get user profile failed",
+        error: e,
+        name: "AuthService",
+      );
+
       rethrow;
     }
   }
@@ -52,7 +81,10 @@ class AuthService {
     FirebaseApp? secondaryApp;
 
     try {
-      print("[AuthService] Creating user: $email");
+      AppLogger.log(
+        "Creating user: $email",
+        name: "AuthService",
+      );
 
       final appName =
           'UserCreationApp_${DateTime.now().millisecondsSinceEpoch}';
@@ -81,11 +113,24 @@ class AuthService {
           'createdAt': FieldValue.serverTimestamp(),
         });
 
-        print("[AuthService] User Created");
-        print("[AuthService] UID: ${credential.user!.uid}");
+        AppLogger.log(
+          "User Created",
+          name: "AuthService",
+        );
+
+        AppLogger.log(
+          "UID: ${credential.user!.uid}",
+          name: "AuthService",
+        );
       }
     } catch (e) {
-      print("[AuthService] Register Error: $e");
+
+      AppLogger.error(
+        "Register Error",
+        error: e,
+        name: "AuthService",
+      );
+
       rethrow;
     } finally {
       if (secondaryApp != null) {
@@ -93,17 +138,36 @@ class AuthService {
       }
     }
   }
-
   Future<void> changePassword(String password) async {
-    print("[AuthService] Updating password");
 
-    if (_auth.currentUser != null) {
-      await _auth.currentUser!.updatePassword(password);
+    try {
+
+      AppLogger.log(
+        "Updating password",
+        name: "AuthService",
+      );
+
+      if (_auth.currentUser != null) {
+        await _auth.currentUser!.updatePassword(password);
+      }
+
+    } catch (e) {
+
+      AppLogger.error(
+        "Password update failed",
+        error: e,
+        name: "AuthService",
+      );
+
+      rethrow;
     }
   }
 
   Future<void> logout() async {
-    print("[AuthService] Logging out");
+    AppLogger.log(
+      "Updating password",
+      name: "AuthService",
+    );
 
     await _auth.signOut();
   }
