@@ -1,12 +1,17 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+
 class ConnectivityService {
-  final Connectivity _conn = Connectivity();
+  final Connectivity _connectivity = Connectivity();
 
-  Stream<bool> get onStatusChange => _conn.onConnectivityChanged
-      .map((r) => r != ConnectivityResult.none);
+  Future<bool> get isConnected async {
+    final results = await _connectivity.checkConnectivity();
 
-  Future<bool> get isOnline async {
-    final r = await _conn.checkConnectivity();
-    return r != ConnectivityResult.none;
+    return !results.contains(ConnectivityResult.none);
+  }
+
+  Stream<bool> get connectionStream {
+    return _connectivity.onConnectivityChanged.map((results) {
+      return !results.contains(ConnectivityResult.none);
+    });
   }
 }

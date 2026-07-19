@@ -1,473 +1,582 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/currency_formatter.dart';
-import '../../core/widgets/app_card.dart';
-import '../../providers/order_provider.dart';
+
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/currency_formatter.dart';
+import '../../../core/widgets/app_card.dart';
+
+import '../../../providers/order_provider.dart';
+
+import '../../core/service/dashboard_service.dart';
+import '../widgets/dashboard_card.dart';
+
+
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+
+
+  const DashboardScreen({
+    super.key,
+  });
+
+
 
   @override
   Widget build(BuildContext context) {
 
-    // Provider එකෙන් orders list එක ලබාගන්නවා
-    final orders = context.watch<OrderProvider>().orders;
 
-    // අද sales total එක calculate කරනවා
-    final todayTotal =
-    orders.fold(0.0, (sum, order) => sum + order.total);
+    final dashboardService =
+    DashboardService();
 
-    // Demo chart data
-    final spark = [
-      12, 18, 14, 22, 19, 28,
-      24, 32, 28, 36, 30, 38
-    ];
 
-    // Chart එකේ highest value එක
-    final maxSpark =
-    spark.reduce((a, b) => a > b ? a : b);
+    final orders =
+        context.watch<OrderProvider>().orders;
+
+
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        14,
+        20,
+        24,
+      ),
+
 
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+
 
         children: [
 
-          // =========================
-          // HEADER SECTION
-          // =========================
+
+
+          // ==========================
+          // HEADER
+          // ==========================
+
 
           const Text(
-            'OVERVIEW',
+            "OVERVIEW",
+
             style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSec,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
+              fontSize:12,
+              color:AppColors.textSec,
+              fontWeight:FontWeight.w500,
             ),
+
           ),
 
-          const SizedBox(height: 2),
+
+
+          const SizedBox(height:4),
+
+
 
           const Text(
-            'Dashboard',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text,
-              letterSpacing: -0.4,
+            "Dashboard",
+
+            style:TextStyle(
+              fontSize:26,
+              fontWeight:FontWeight.w700,
+              color:AppColors.text,
             ),
+
           ),
 
-          const SizedBox(height: 18),
 
-          // =========================
-          // TOP CARDS
-          // =========================
 
-          Row(
-            children: [
+          const SizedBox(height:20),
 
-              // Today's Revenue Card
-              Expanded(
-                child: AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
 
-                      const Text(
-                        'TODAY',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSec,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
 
-                      const SizedBox(height: 6),
 
-                      // අද sales amount
-                      Text(
-                        formatLKR(todayTotal),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                        ),
-                      ),
 
-                      const SizedBox(height: 8),
+          // ==========================
+          // DASHBOARD CARDS
+          // ==========================
 
-                      // Growth badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
 
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD1FAE5),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
+          GridView.count(
 
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
+            shrinkWrap:true,
 
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 11,
-                              color: Color(0xFF047857),
-                            ),
+            physics:
+            const NeverScrollableScrollPhysics(),
 
-                            SizedBox(width: 4),
 
-                            Text(
-                              '12.4%',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF047857),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            crossAxisCount:2,
+
+
+            crossAxisSpacing:12,
+
+            mainAxisSpacing:12,
+
+
+            childAspectRatio:1.45,
+
+
+
+            children:[
+
+
+
+              _RevenueCard(
+                title:"Today's Income",
+                stream:
+                dashboardService.todayRevenue(),
+                icon:
+                Icons.today,
               ),
 
-              const SizedBox(width: 12),
 
-              // Monthly Revenue Card
-              Expanded(
-                child: AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
 
-                      const Text(
-                        'THIS MONTH',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSec,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
 
-                      const SizedBox(height: 6),
-
-                      Text(
-                        formatLKR(680000),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Mini bar chart
-                      SizedBox(
-                        height: 22,
-
-                        child: Row(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.end,
-
-                          children: spark
-                              .asMap()
-                              .entries
-                              .map((entry) {
-
-                            // Last 3 bars highlight කරනවා
-                            final isRecent =
-                                entry.key >= spark.length - 3;
-
-                            return Expanded(
-                              child: Padding(
-                                padding:
-                                const EdgeInsets.symmetric(
-                                  horizontal: 1,
-                                ),
-
-                                child: FractionallySizedBox(
-                                  heightFactor:
-                                  entry.value / maxSpark,
-
-                                  alignment:
-                                  Alignment.bottomCenter,
-
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isRecent
-                                          ? AppColors.primary
-                                          : AppColors.primaryTint,
-
-                                      borderRadius:
-                                      BorderRadius.circular(1.5),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _CountCard(
+                title:"Today's Orders",
+                stream:
+                dashboardService.todayOrders(),
+                icon:
+                Icons.shopping_cart,
               ),
+
+
+
+
+              _RevenueCard(
+                title:"This Month Income",
+                stream:
+                dashboardService.monthRevenue(),
+                icon:
+                Icons.calendar_month,
+              ),
+
+
+
+
+              _CountCard(
+                title:"This Month Orders",
+                stream:
+                dashboardService.monthOrders(),
+                icon:
+                Icons.receipt_long,
+              ),
+
+
+
+
+              _RevenueCard(
+                title:"Last Month Income",
+                stream:
+                dashboardService.lastMonthRevenue(),
+                icon:
+                Icons.history,
+              ),
+
+
+
+
+              _CountCard(
+                title:"Last Month Orders",
+                stream:
+                dashboardService.lastMonthOrders(),
+                icon:
+                Icons.shopping_bag,
+              ),
+
+
+
+
+              _RevenueCard(
+                title:"This Year Income",
+                stream:
+                dashboardService.yearRevenue(),
+                icon:
+                Icons.date_range,
+              ),
+
+
+
+
+              _CountCard(
+                title:"This Year Orders",
+                stream:
+                dashboardService.yearOrders(),
+                icon:
+                Icons.analytics,
+              ),
+
+
+
+
+
+              _RevenueCard(
+                title:"Total Revenue",
+                stream:
+                dashboardService.totalRevenue(),
+                icon:
+                Icons.attach_money,
+              ),
+
+
+
+
+              _RevenueCard(
+                title:"Total Expenses",
+                stream:
+                dashboardService.totalExpenses(),
+                icon:
+                Icons.money_off,
+              ),
+
+
+
+
+
+              _RevenueCard(
+                title:"Net Profit",
+                stream:
+                dashboardService.profit(),
+                icon:
+                Icons.trending_up,
+              ),
+
+
+
             ],
+
           ),
 
-          const SizedBox(height: 16),
 
-          // =========================
-          // QUICK STATS
-          // =========================
 
-          Row(
-            children: [
 
-              // Total Orders
-              Expanded(
-                child: _MiniStat(
-                  'ORDERS',
-                  '${orders.length}',
-                ),
-              ),
+          const SizedBox(height:25),
 
-              const SizedBox(width: 10),
 
-              // Average Bill
-              Expanded(
-                child: _MiniStat(
-                  'AVG BILL',
 
-                  formatLKR(
-                    orders.isEmpty
-                        ? 0
-                        : orders.fold(
-                      0.0,
-                          (sum, order) =>
-                      sum + order.total,
-                    ) /
-                        orders.length,
-                  ),
-                ),
-              ),
 
-              const SizedBox(width: 10),
 
-              // Total Items Sold
-              Expanded(
-                child: _MiniStat(
-                  'ITEMS',
-                  '${orders.fold(0, (sum, order) => sum + order.itemCount)}',
-                ),
-              ),
-            ],
-          ),
+          // ==========================
+          // RECENT ORDERS
+          // ==========================
 
-          const SizedBox(height: 20),
 
-          // =========================
-          // RECENT ORDERS TITLE
-          // =========================
 
           Row(
-            children: [
+
+            children:[
 
               const Text(
-                'Recent Orders',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
+                "Recent Orders",
+
+                style:TextStyle(
+                  fontSize:16,
+                  fontWeight:
+                  FontWeight.w700,
                 ),
+
               ),
+
 
               const Spacer(),
 
+
               Text(
-                'View All',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                "View All",
+
+                style:TextStyle(
+                  color:
+                  AppColors.primary,
+                  fontWeight:
+                  FontWeight.w600,
                 ),
+
               ),
+
             ],
+
           ),
 
-          const SizedBox(height: 10),
 
-          // =========================
-          // RECENT ORDERS LIST
-          // =========================
+
+          const SizedBox(height:12),
+
+
+
 
           AppCard(
-            padding: EdgeInsets.zero,
 
-            child: ListView.separated(
+            padding:
+            EdgeInsets.zero,
 
-              shrinkWrap: true,
+
+            child:
+            ListView.separated(
+
+              shrinkWrap:true,
 
               physics:
               const NeverScrollableScrollPhysics(),
 
-              // Maximum orders 5ක් පෙන්වනවා
-              itemCount: orders.length.clamp(0, 5),
 
-              separatorBuilder: (_, __) =>
+              itemCount:
+              orders.length.clamp(0,5),
+
+
+
+              separatorBuilder:
+                  (_,__) =>
               const Divider(
-                height: 1,
-                color: AppColors.divider,
+                height:1,
+                color:
+                AppColors.divider,
               ),
 
-              itemBuilder: (_, index) {
 
-                // Current order
-                final order = orders[index];
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
+
+              itemBuilder:
+                  (_,index){
+
+
+
+                final order =
+                orders[index];
+
+
+
+                return ListTile(
+
+
+                  leading:
+                  Container(
+
+                    width:38,
+                    height:38,
+
+
+                    decoration:
+                    BoxDecoration(
+
+                      color:
+                      AppColors.primaryTint,
+
+                      borderRadius:
+                      BorderRadius.circular(10),
+
+                    ),
+
+
+                    child:
+                    const Icon(
+                      Icons.shopping_bag,
+                      color:
+                      AppColors.primary,
+                    ),
+
                   ),
 
-                  child: Row(
-                    children: [
 
-                      // Order Icon
-                      Container(
-                        width: 36,
-                        height: 36,
 
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryTint,
-                          borderRadius:
-                          BorderRadius.circular(10),
-                        ),
+                  title:
+                  Text(
+                    order.invoiceId,
 
-                        child: const Icon(
-                          Icons.shopping_bag_outlined,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                      ),
+                    style:
+                    const TextStyle(
+                      fontWeight:
+                      FontWeight.w600,
+                    ),
 
-                      const SizedBox(width: 12),
-
-                      // Order Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-
-                          children: [
-
-                            // Invoice Number
-                            Text(
-                              order.invoiceId,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.text,
-                              ),
-                            ),
-
-                            const SizedBox(height: 1),
-
-                            // Order Time + Item Count
-                            Text(
-                              '${order.createdAt.hour % 12 == 0 ? 12 : order.createdAt.hour % 12}:'
-                                  '${order.createdAt.minute.toString().padLeft(2, '0')} '
-                                  '${order.createdAt.hour >= 12 ? 'PM' : 'AM'}'
-                                  ' · ${order.itemCount} items',
-
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textSec,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Order Total
-                      Text(
-                        formatLKR(order.total),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text,
-                        ),
-                      ),
-                    ],
                   ),
+
+
+
+                  subtitle:
+                  Text(
+                    "${order.itemCount} items",
+
+                  ),
+
+
+
+                  trailing:
+                  Text(
+
+                    formatLKR(
+                      order.total,
+                    ),
+
+                    style:
+                    const TextStyle(
+                      fontWeight:
+                      FontWeight.w700,
+                    ),
+
+                  ),
+
+
                 );
+
+
               },
+
+
             ),
+
           ),
+
+
         ],
+
       ),
+
     );
+
+
   }
+
 }
 
-// =======================================
-// SMALL STAT CARD WIDGET
-// =======================================
 
-class _MiniStat extends StatelessWidget {
 
-  final String label;
-  final String value;
 
-  const _MiniStat(this.label, this.value);
+
+
+// =====================================
+// REVENUE CARD
+// =====================================
+
+
+class _RevenueCard extends StatelessWidget {
+
+
+  final String title;
+
+  final Stream<double> stream;
+
+  final IconData icon;
+
+
+
+  const _RevenueCard({
+
+    required this.title,
+
+    required this.stream,
+
+    required this.icon,
+
+  });
+
+
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
 
-    return AppCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 10,
-      ),
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return StreamBuilder<double>(
 
-        children: [
 
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textSec,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+      stream:stream,
 
-          const SizedBox(height: 3),
 
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text,
-            ),
-          ),
-        ],
-      ),
+      builder:(context,snapshot){
+
+
+        return DashboardCard(
+
+          title:title,
+
+          value:
+          snapshot.data ?? 0,
+
+
+          icon:icon,
+
+        );
+
+
+      },
+
     );
+
+
   }
+
+
+}
+
+
+
+
+
+
+// =====================================
+// COUNT CARD
+// =====================================
+
+
+class _CountCard extends StatelessWidget {
+
+
+  final String title;
+
+  final Stream<int> stream;
+
+  final IconData icon;
+
+
+
+  const _CountCard({
+
+    required this.title,
+
+    required this.stream,
+
+    required this.icon,
+
+  });
+
+
+
+  @override
+  Widget build(BuildContext context){
+
+
+    return StreamBuilder<int>(
+
+
+      stream:stream,
+
+
+      builder:(context,snapshot){
+
+
+        return DashboardCard(
+
+          title:title,
+
+          value:
+          (snapshot.data ?? 0)
+              .toDouble(),
+
+
+          icon:icon,
+
+        );
+
+
+      },
+
+
+    );
+
+
+  }
+
+
 }

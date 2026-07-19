@@ -1,46 +1,96 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../core/enums/date_filter.dart';
+import '../../core/utils/date_utils.dart';
 import '../../model/expense.dart';
 
 class ExpenseService {
-
-  // expenses collection
-  final expenses =
+  final CollectionReference<Map<String, dynamic>> expenses =
   FirebaseFirestore.instance.collection('expenses');
 
-  // අද expenses බලන්න (simple stream)
-  Stream<List<Expense>> watchToday() {
+  /// -------------------------------
+  /// Private reusable stream
+  /// -------------------------------
+  Stream<List<Expense>> getAllExpenses(){
 
-    DateTime today = DateTime.now();
-
-    DateTime startOfDay = DateTime(
-      today.year,
-      today.month,
-      today.day,
+    return expenses
+        .orderBy(
+      'createdAt',
+      descending:true,
+    )
+        .snapshots()
+        .map(
+          (snapshot)=>
+          snapshot.docs
+              .map(
+              Expense.fromFirestore
+          )
+              .toList(),
     );
 
+  }
+  Stream<List<Expense>> _watchBetween(
+      DateTime start,
+      DateTime end,
+      ) {
     return expenses
         .where(
       'createdAt',
-      isGreaterThanOrEqualTo:
-      Timestamp.fromDate(startOfDay),
+      isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+    )
+        .where(
+      'createdAt',
+      isLessThan: Timestamp.fromDate(end),
     )
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-
-      return snapshot.docs.map((doc) {
-        return Expense.fromFirestore(doc);
-      }).toList();
-
-    });
+        .map(
+          (snapshot) =>
+          snapshot.docs.map(Expense.fromFirestore).toList(),
+    );
   }
 
-  // add expense
+  Stream<List<Expense>> getExpensesBetween(
+      DateTime start,
+      DateTime end,
+      ) {
+    return _watchBetween(start, end);
+  }
+
+  Stream<List<Expense>> getExpensesToday() {
+    final range = AppDateUtils.getRange(DateFilter.today);
+    return _watchBetween(range['start']!, range['end']!);
+  }
+
+  Stream<List<Expense>> getExpensesThisWeek() {
+    final range = AppDateUtils.getRange(DateFilter.thisWeek);
+    return _watchBetween(range['start']!, range['end']!);
+  }
+
+  Stream<List<Expense>> getExpensesThisMonth() {
+    final range = AppDateUtils.getRange(DateFilter.thisMonth);
+    return _watchBetween(range['start']!, range['end']!);
+  }
+
+  Stream<List<Expense>> getExpensesLastMonth() {
+    final range = AppDateUtils.getRange(DateFilter.lastMonth);
+    return _watchBetween(range['start']!, range['end']!);
+  }
+
+  Stream<List<Expense>> getExpensesThisYear() {
+    final range = AppDateUtils.getRange(DateFilter.thisYear);
+    return _watchBetween(range['start']!, range['end']!);
+  }
+
+  /// Keep existing method
+  Stream<List<Expense>> watchToday() {
+    return getExpensesToday();
+  }
+
   Future<void> add(Expense expense) async {
     await expenses.add(expense.toMap());
   }
 
-  // delete expense
   Future<void> delete(String id) async {
     await expenses.doc(id).delete();
   }

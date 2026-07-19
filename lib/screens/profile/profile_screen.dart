@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/app_alert.dart';
 import '../../providers/app_auth_provider.dart';
+import '../expenses/expense_history_screen.dart';
+import '../ordersHistory/orders_history_screen.dart';
 import 'user_management_screen.dart'; // Import target navigation terminal profile
 
 class ProfileScreen extends StatelessWidget {
@@ -99,7 +101,51 @@ class ProfileScreen extends StatelessWidget {
                 ),
 
                 const Divider(height: 1, color: AppColors.border),
+                ListTile(
+                  leading: const Icon(Icons.receipt_long_outlined),
+                  title: const Text('Orders History'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OrdersHistoryScreen()),
+                    );
+                  },
+                ),
+                Divider(height: 1, color: AppColors.border),
 
+                ListTile(
+                  leading: const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: AppColors.expense,
+                  ),
+                  title: const Text(
+                    'Expense History',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'View all business expenses',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                  ),
+
+                  onTap: () {
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ExpenseHistoryScreen(),
+                      ),
+                    );
+
+                  },
+                ),
                 // Core System Logout Actions Item
                 ListTile(
                   leading: const Icon(Icons.logout_outlined, color: AppColors.expense),
